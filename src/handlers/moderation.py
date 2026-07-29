@@ -14,6 +14,7 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if admin
     admins = await chat.get_administrators()
     if not is_admin(user.id, admins) and user.id != context.bot_data.get('admin_id'):
+        await update.effective_message.reply_text("❌ Only admins can use this command.")
         return
     
     # Get target user from args or reply
@@ -33,7 +34,7 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason provided"
     
     try:
-        await chat.ban_member(target_user.id)
+        await chat.ban(target_user.id)
         await update.effective_message.reply_text(
             f"🔨 {target_user.mention_html()} has been banned.\nReason: {reason}",
             parse_mode="HTML"
@@ -52,6 +53,7 @@ async def mute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if admin
     admins = await chat.get_administrators()
     if not is_admin(user.id, admins) and user.id != context.bot_data.get('admin_id'):
+        await update.effective_message.reply_text("❌ Only admins can use this command.")
         return
     
     # Get target user
@@ -75,10 +77,11 @@ async def mute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_text("📝 Reply to a user or provide user ID [duration]")
         return
     
+    import time
     try:
         if duration:
-            until = context.bot_data.get('current_time', 0) + duration
-            await chat.restrict_chat_member(
+            until = int(time.time()) + duration
+            await chat.restrict_member(
                 target_user.id,
                 permissions=ChatPermissions(can_send_messages=False),
                 until_date=until
@@ -88,7 +91,7 @@ async def mute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="HTML"
             )
         else:
-            await chat.restrict_chat_member(
+            await chat.restrict_member(
                 target_user.id,
                 permissions=ChatPermissions(can_send_messages=False)
             )
@@ -110,6 +113,7 @@ async def unmute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if admin
     admins = await chat.get_administrators()
     if not is_admin(user.id, admins) and user.id != context.bot_data.get('admin_id'):
+        await update.effective_message.reply_text("❌ Only admins can use this command.")
         return
     
     # Get target user
@@ -127,7 +131,7 @@ async def unmute_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     try:
-        await chat.restrict_chat_member(
+        await chat.restrict_member(
             target_user.id,
             permissions=ChatPermissions(
                 can_send_messages=True,
@@ -154,6 +158,7 @@ async def warn_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if admin
     admins = await chat.get_administrators()
     if not is_admin(user.id, admins) and user.id != context.bot_data.get('admin_id'):
+        await update.effective_message.reply_text("❌ Only admins can use this command.")
         return
     
     # Get target user
@@ -191,7 +196,7 @@ async def warn_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         warn_limit = settings.warn_limit if settings else 3
         
         if warning.warnings >= warn_limit:
-            await chat.ban_member(target_user.id)
+            await chat.ban(target_user.id)
             await update.effective_message.reply_text(
                 f"⚠️ {target_user.mention_html()} has been banned after {warning.warnings} warnings.",
                 parse_mode="HTML"
@@ -217,6 +222,7 @@ async def kick_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if admin
     admins = await chat.get_administrators()
     if not is_admin(user.id, admins) and user.id != context.bot_data.get('admin_id'):
+        await update.effective_message.reply_text("❌ Only admins can use this command.")
         return
     
     # Get target user
@@ -253,6 +259,7 @@ async def purge_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if admin
     admins = await chat.get_administrators()
     if not is_admin(user.id, admins) and user.id != context.bot_data.get('admin_id'):
+        await update.effective_message.reply_text("❌ Only admins can use this command.")
         return
     
     if not update.effective_message or not update.effective_message.reply_to_message:
