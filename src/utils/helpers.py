@@ -1,110 +1,164 @@
+"""Utility Helper Functions"""
+import re
 import random
 import string
 from datetime import datetime, timedelta
+from typing import Optional, Tuple
+from telegram import User, Chat
 
-def generate_captcha_answer(length: int = 6) -> str:
-    """Generate a random captcha answer"""
-    chars = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(chars) for _ in range(length))
 
-def generate_math_captcha() -> tuple:
-    """Generate a simple math captcha"""
-    a = random.randint(1, 20)
-    b = random.randint(1, 20)
-    question = f"{a} + {b} = ?"
-    answer = str(a + b)
-    return question, answer
-
-def format_time(seconds: int) -> str:
-    """Format seconds into human readable time"""
-    if seconds < 60:
-        return f"{seconds} seconds"
-    elif seconds < 3600:
-        minutes = seconds // 60
-        return f"{minutes} minute{'s' if minutes > 1 else ''}"
-    elif seconds < 86400:
-        hours = seconds // 3600
-        return f"{hours} hour{'s' if hours > 1 else ''}"
-    else:
-        days = seconds // 86400
-        return f"{days} day{'s' if days > 1 else ''}"
-
-def parse_time(time_str: str) -> int:
-    """Parse time string like '5m', '1h', '2d' into seconds"""
-    time_str = time_str.lower().strip()
+def extract_time(time_str: str) -> Optional[datetime]:
+    """Extract time from strings like '1m', '2h', '3d', '1w'"""
+    if not time_str:
+        return None
     
-    multipliers = {
-        's': 1,
-        'm': 60,
-        'h': 3600,
-        'd': 86400,
-        'w': 604800
-    }
+    match = re.match(r'^(\d+)([smhdw])$', time_str.lower())
+    if not match:
+        return None
     
-    try:
-        if time_str[-1] in multipliers:
-            value = int(time_str[:-1])
-            return value * multipliers[time_str[-1]]
-        else:
-            return int(time_str)
-    except (ValueError, IndexError):
-        return 0
+    value, unit = match.groups()
+    value = int(value)
+    
+    now = datetime.utcnow()
+    if unit == 's':
+        return now + timedelta(seconds=value)
+    elif unit == 'm':
+        return now + timedelta(minutes=value)
+    elif unit == 'h':
+        return now + timedelta(hours=value)
+    elif unit == 'd':
+        return now + timedelta(days=value)
+    elif unit == 'w':
+        return now + timedelta(weeks=value)
+    
+    return None
 
-def escape_markdown(text: str) -> str:
-    """Escape special markdown characters"""
-    special_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    for char in special_chars:
-        text = text.replace(char, '\\' + char)
-    return text
 
-def mention_user(user_id: int, name: str) -> str:
-    """Create a markdown mention"""
-    return f"[{name}](tg://user?id={user_id})"
-
-def truncate_text(text: str, max_length: int = 50) -> str:
-    """Truncate text with ellipsis"""
-    if len(text) <= max_length:
-        return text
-    return text[:max_length-3] + "..."
-
-def is_valid_url(url: str) -> bool:
-    """Basic URL validation"""
-    return url.startswith(('http://', 'https://', 't.me/', 'telegram.me/'))
-
-def extract_urls(text: str) -> list:
-    """Extract URLs from text"""
-    import re
-    url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+|t\.me/[^\s<>"]+'
-    return re.findall(url_pattern, text)
-
-def contains_banned_word(text: str, banned_words: list) -> tuple:
-    """Check if text contains any banned words"""
-    text_lower = text.lower()
-    for word in banned_words:
-        if word.lower() in text_lower:
-            return True, word
-    return False, None
-
-def get_user_status(is_muted: bool, is_banned: bool) -> str:
-    """Get user status string"""
-    if is_banned:
-        return "🚫 Banned"
-    elif is_muted:
-        return "🔇 Muted"
-    else:
-        return "✅ Active"
-
-def format_datetime(dt: datetime) -> str:
-    """Format datetime to readable string"""
-    return dt.strftime("%Y-%m-%d %H:%M:%S")
-
-def get_relative_time(dt: datetime) -> str:
-    """Get relative time description"""
+def format_time(dt: datetime) -> str:
+    """Format datetime to human readable string"""
     now = datetime.utcnow()
     diff = dt - now
     
     if diff.total_seconds() < 0:
-        return "Expired"
+        return "expired"
     
     seconds = int(diff.total_seconds())
-    return format_time(seconds) + " remaining"
+    if seconds < 60:
+        return f"{seconds} seconds"
+    elif seconds < 3600:
+        return f"{seconds // 60} minutes"
+    elif seconds < 86400:
+        return f"{seconds // 3600} hours"
+    else:
+        return f"{seconds // 86400} days"
+
+
+def generate_captcha() -> Tuple[str, str]:
+    """Generate a simple math CAPTCHA"""
+    num1 = random.randint(1, 10)
+    num2 = random.randint(1, 10)
+    question = f"{num1} + {num2} = ?"
+    answer = str(num1 + num2)
+    return question, answer
+
+
+def generate_random_string(length: int = 8) -> str:
+    """Generate random alphanumeric string"""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def mention_html(user: User) -> str:
+    """Create HTML mention for user"""
+    if user.username:
+        return f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
+    return f'<a href="tg://user?id={user.id}">{user.first_name or "User"}</a>'
+
+
+def truncate_text(text: str, max_length: int = 100) -> str:
+    """Truncate text with ellipsis"""
+    if len(text) <= max_length:
+        return text
+    return text[:max_length - 3] + "..."
+
+
+def is_link(text: str) -> bool:
+    """Check if text contains URL/link"""
+    url_pattern = r'https?://[^\s]+'
+    return bool(re.search(url_pattern, text))
+
+
+def is_forwarded_message(message) -> bool:
+    """Check if message is forwarded"""
+    return message.forward_from is not None or message.forward_from_chat is not None
+
+
+def count_mentions(message) -> int:
+    """Count mentions in message"""
+    return len(message.entities) if message.entities else 0
+
+
+def count_hashtags(text: str) -> int:
+    """Count hashtags in text"""
+    return len(re.findall(r'#\w+', text))
+
+
+def parse_filter_command(text: str) -> Tuple[str, str]:
+    """Parse filter command: /filter trigger | response"""
+    if '|' not in text:
+        return "", ""
+    
+    parts = text.split('|', 1)
+    trigger = parts[0].strip()
+    response = parts[1].strip() if len(parts) > 1 else ""
+    
+    return trigger, response
+
+
+def parse_note_command(text: str) -> Tuple[str, str]:
+    """Parse note command: /addnote name | content"""
+    if '|' not in text:
+        return "", ""
+    
+    parts = text.split('|', 1)
+    name = parts[0].strip()
+    content = parts[1].strip() if len(parts) > 1 else ""
+    
+    return name, content
+
+
+def get_chat_type_emoji(chat_type: str) -> str:
+    """Get emoji for chat type"""
+    emojis = {
+        "private": "👤",
+        "group": "👥",
+        "supergroup": "🏢",
+        "channel": "📢",
+    }
+    return emojis.get(chat_type, "❓")
+
+
+def format_number(num: int) -> str:
+    """Format large numbers with K, M suffixes"""
+    if num >= 1000000:
+        return f"{num / 1000000:.1f}M"
+    elif num >= 1000:
+        return f"{num / 1000:.1f}K"
+    return str(num)
+
+
+async def check_user_admin(chat_id: int, user_id: int, context) -> bool:
+    """Check if user is admin in chat"""
+    try:
+        chat_member = await context.bot.get_chat_member(chat_id, user_id)
+        return chat_member.status in ['creator', 'administrator']
+    except Exception:
+        return False
+
+
+async def check_bot_admin(chat_id: int, context) -> bool:
+    """Check if bot is admin in chat"""
+    try:
+        bot_member = await context.bot.get_chat_member(chat_id, context.bot.id)
+        return bot_member.status in ['creator', 'administrator']
+    except Exception:
+        return False

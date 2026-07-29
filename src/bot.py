@@ -1,128 +1,210 @@
-import os
+"""Main Bot Entry Point"""
 import logging
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from sqlalchemy.orm import Session
+from telegram import Update, BotCommandScopeAllGroupChats, BotCommand
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    filters,
+    ContextTypes,
+)
 
-# Import database and handlers
-from src.database import init_db, engine, Base
-from src.db_operations import get_db, create_or_update_user, get_group, update_group_settings
-from src.handlers.moderation import get_moderation_handlers
-from src.handlers.protection import get_protection_handlers
+from src.configs.settings import Config
+from src.models.database import init_db
+from src.handlers.admin import setup_admin_commands
+from src.handlers.protection import setup_protection_handlers
+from src.handlers.welcome import setup_welcome_handlers
+from src.handlers.filters import setup_filter_handlers
+from src.handlers.notes import setup_note_handlers
+from src.handlers.moderation import setup_moderation_handlers
+from src.handlers.inline import setup_inline_handlers
 
 # Configure logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    handlers=[
-        logging.FileHandler('logs/bot.log'),
-        logging.StreamHandler()
-    ]
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Get bot token from environment
-BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-ADMIN_IDS = [int(x) for x in os.getenv('ADMIN_IDS', '').split(',') if x]
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /start command"""
+    user = update.effective_user
+    
+    if update.chat_type == "private":
+        welcome_text = (
+            f"👋 Hello {user.first_name}!\n\n"
+            "I'm an advanced group management bot with powerful features:\n\n"
+            "🛡️ <b>Protection:</b> Anti-spam, anti-link, CAPTCHA\n"
+            "👋 <b>Welcome:</b> Custom welcome/goodbye messages\n"
+            "⚠️ <b>Filters:</b> Auto-responses to keywords\n"
+            "📝 <b>Notes:</b> Save and share information\n"
+            "🎨 <b>Themes:</b> Beautiful color themes for buttons\n"
+            "🔧 <b>Moderation:</b> Ban, mute, warn users\n\n"
+            "Add me to your group and make me admin to get started!\n\n"
+            "Use /help in a group to see all commands."
+        )
+        
+        from src.utils.inline_keyboards import InlineBuilder
+        builder = InlineBuilder(Config.THEMES.get("default", {}))
+        keyboard = (builder
+            .row(builder.btn_url("➕ Add to Group", 
+                                f"https://t.me/{context.bot.username}?startgroup=new"),
+                builder.btn_url("📖 Documentation", "https://github.com/Lukerman/tg-groupmanagementbot"))
+            .row(builder.btn("🎨 Change Theme", "theme_show_all"))
+            .build())
+        
+        await update.message.reply_html(welcome_text, reply_markup=keyboard)
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /help command"""
+    help_text = (
+        "📚 <b>Help - Available Commands</b>\n\n"
+        "<b>🛡️ Protection:</b>\n"
+        "/lock - Lock chat permissions\n"
+        "/unlock - Unlock chat permissions\n"
+        "/antispam - Toggle anti-spam\n"
+        "/antilink - Toggle link deletion\n\n"
+        "<b>👋 Welcome:</b>\n"
+        "/welcome - View welcome settings\n"
+        "/setwelcome - Set welcome message\n"
+        "/goodbye - Toggle goodbye messages\n\n"
+        "<b>⚠️ Moderation:</b>\n"
+        "/ban - Ban a user\n"
+        "/mute - Mute a user\n"
+        "/warn - Warn a user\n"
+        "/kick - Kick a user\n"
+        "/purge - Delete messages\n\n"
+        "<b>📝 Filters & Notes:</b>\n"
+        "/filter - Add a filter\n"
+        "/filters - List all filters\n"
+        "/addnote - Add a note\n"
+        "/notes - List all notes\n\n"
+        "<b>🎨 Settings:</b>\n"
+        "/settings - Open settings panel\n"
+        "/theme - Change button theme\n\n"
+        "💡 <i>Tip: Use inline buttons for easy configuration!</i>"
+    )
+    
+    from src.utils.inline_keyboards import get_main_menu_keyboard
+    await update.message.reply_html(help_text, reply_markup=get_main_menu_keyboard())
+
+
+async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Open settings panel"""
+    if not update.chat_id or update.chat_type not in ["group", "supergroup"]:
+        await update.message.reply_text("This command only works in groups!")
+        return
+    
+    # Check if user is admin
+    user = update.effective_user
+    chat_member = await context.bot.get_chat_member(update.chat_id, user.id)
+    if chat_member.status not in ['creator', 'administrator']:
+        await update.message.reply_text("❌ Only admins can access settings!")
+        return
+    
+    from src.utils.inline_keyboards import get_main_menu_keyboard
+    from src.models.database import ChatSettings
+    async with context.bot_data['db_session']() as session:
+        result = await session.execute(
+            ChatSettings.__table__.select().where(ChatSettings.chat_id == update.chat_id)
+        )
+        settings = result.fetchone()
+        
+        theme = settings.theme if settings else "default"
+    
+    settings_text = (
+        f"⚙️ <b>Group Settings</b>\n\n"
+        f"📝 <b>Chat:</b> {update.effective_chat.title}\n"
+        f"🆔 <b>ID:</b> <code>{update.chat_id}</code>\n\n"
+        "Select an option below to configure:"
+    )
+    
+    await update.message.reply_html(settings_text, reply_markup=get_main_menu_keyboard(theme))
+
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log errors caused by updates"""
+    logger.error("Exception while handling an update:", exc_info=context.error)
+    
+    # Notify admin if possible
+    if context.bot_data.get('admin_id'):
+        try:
+            await context.bot.send_message(
+                chat_id=context.bot_data['admin_id'],
+                text=f"⚠️ Error occurred:\n<code>{context.error}</code>",
+                parse_mode='HTML'
+            )
+        except Exception:
+            pass
+
 
 async def post_init(application: Application):
-    """Initialize database after bot starts"""
-    logger.info("Initializing database...")
-    init_db()
-    logger.info("Database initialized!")
-
-async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle all callback queries"""
-    query = update.callback_query
-    await query.answer()
+    """Initialize bot after startup"""
+    # Set commands for group chats
+    commands = [
+        BotCommand("start", "Start the bot"),
+        BotCommand("help", "Show help message"),
+        BotCommand("settings", "Open group settings panel"),
+        BotCommand("ban", "Ban a user"),
+        BotCommand("mute", "Mute a user"),
+        BotCommand("warn", "Warn a user"),
+        BotCommand("kick", "Kick a user"),
+        BotCommand("welcome", "Configure welcome messages"),
+        BotCommand("filter", "Add a filter"),
+        BotCommand("addnote", "Add a note"),
+        BotCommand("lock", "Lock chat permissions"),
+        BotCommand("unlock", "Unlock chat permissions"),
+        BotCommand("theme", "Change button theme"),
+    ]
     
-    data = query.data
-    
-    if data == 'start':
-        await query.edit_message_text("👋 Welcome back! Use /start to begin.")
-    elif data == 'help':
-        await query.edit_message_text(
-            "📖 **Help**\n\n"
-            "I can help you manage your group with:\n"
-            "• Welcome messages\n"
-            "• CAPTCHA verification\n"
-            "• Anti-spam & Anti-flood\n"
-            "• Warnings, Mutes & Bans\n"
-            "• Link protection\n\n"
-            "Use /help for full command list.",
-            parse_mode='Markdown'
-        )
-    elif data == 'settings':
-        chat = update.effective_chat
-        if not chat or chat.type == 'private':
-            await query.edit_message_text("This only works in groups!")
-            return
-        await query.edit_message_text(f"⚙️ Group Settings for {chat.title}\n\nUse /settings for details.")
-    elif data.startswith('setting_'):
-        await query.edit_message_text("Settings configuration coming soon!")
-    elif data.startswith('mod_'):
-        await query.edit_message_text("Moderation tools coming soon!")
-    elif data.startswith('warn_'):
-        await query.edit_message_text("Warning management coming soon!")
-    elif data == 'admin_panel':
-        await query.edit_message_text("👮 Admin Panel\n\nBot statistics and controls coming soon!")
-    else:
-        await query.edit_message_text("Unknown action!")
+    await application.bot.set_my_commands(commands, scope=BotCommandScopeAllGroupChats())
+    logger.info("Bot commands set successfully!")
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Log errors"""
-    logger.error(f"Update {update} caused error: {context.error}")
-
-def add_db_session(func):
-    """Decorator to add database session to context"""
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
-        db = next(get_db())
-        try:
-            context.db_session = db
-            return await func(update, context, *args, **kwargs)
-        finally:
-            db.close()
-    return wrapper
 
 def main():
     """Main function to run the bot"""
-    if not BOT_TOKEN:
-        logger.error("TELEGRAM_BOT_TOKEN environment variable not set!")
-        print("Error: Please set TELEGRAM_BOT_TOKEN environment variable")
-        print("Example: export TELEGRAM_BOT_TOKEN='your_bot_token_here'")
-        return
-    
-    logger.info("Starting bot...")
+    logger.info("Starting Advanced Group Management Bot...")
     
     # Create application
     application = (
         Application.builder()
-        .token(BOT_TOKEN)
+        .token(Config.BOT_TOKEN)
         .post_init(post_init)
         .build()
     )
     
-    # Add database session to all handlers
-    from functools import wraps
+    # Initialize database
+    import asyncio
+    async def setup_db():
+        application.bot_data['db_session'] = await init_db(Config.DATABASE_URL)
+        logger.info("Database initialized!")
     
-    # Register handlers
-    moderation_handlers = get_moderation_handlers()
-    protection_handlers = get_protection_handlers()
+    asyncio.get_event_loop().run_until_complete(setup_db())
     
-    # Add callback handler
-    application.add_handler(CallbackQueryHandler(callback_handler))
+    # Add handlers
+    setup_admin_commands(application)
+    setup_protection_handlers(application)
+    setup_welcome_handlers(application)
+    setup_filter_handlers(application)
+    setup_note_handlers(application)
+    setup_moderation_handlers(application)
+    setup_inline_handlers(application)
     
-    # Add all other handlers
-    for handler in moderation_handlers + protection_handlers:
-        application.add_handler(handler)
+    # Basic commands
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("settings", settings_command))
     
-    # Add error handler
+    # Error handler
     application.add_error_handler(error_handler)
     
     # Start the bot
-    logger.info("Bot started successfully!")
-    print("✅ Bot is running! Press Ctrl+C to stop.")
+    logger.info("Bot is running! Press Ctrl+C to stop.")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -1,145 +1,104 @@
-# Telegram Group Management Bot
+# 🤖 Advanced Telegram Group Management Bot
 
-A fully working, production-ready Telegram group management bot with advanced features built using Python and python-telegram-bot v21.0.
+A powerful, feature-rich Telegram group management bot with advanced moderation tools, custom themes, and inline keyboard controls.
 
-## Features
+## ✨ Features
 
-### 🛡️ Moderation Tools
-- **Ban/Unban** - Ban users with reasons, unban when needed
-- **Mute/Unmute** - Temporary or permanent mutes with duration support (e.g., `/mute 5m spam`)
-- **Warn System** - Warn users, auto-ban after 3 warnings
-- **Kick** - Remove users without banning
-- **Warnings View/Clear** - Track and manage user warnings
+### 🛡️ Protection
+- **Anti-Spam**: Automatically detect and remove spam messages
+- **Link Filter**: Delete messages containing links
+- **Forward Filter**: Block forwarded messages from channels
+- **CAPTCHA Verification**: Verify new members with math challenges
+- **Anti-Bot**: Prevent bots from joining without approval
 
-### 🔒 Protection Features
-- **Welcome Messages** - Customizable welcome messages with {name} and {title} placeholders
-- **CAPTCHA Verification** - Math-based captcha for new members
-- **Anti-Flood** - Detect and mute users who send too many messages
-- **Link Protection** - Auto-delete messages containing links
-- **Banned Words Filter** - Block specific words/phrases
+### 👋 Welcome System
+- Custom welcome messages with HTML formatting
+- Goodbye messages for leaving members
+- Dynamic variables: `{mention}`, `{title}`, `{username}`, `{first_name}`
+- Enable/disable via inline buttons
 
-### ⚙️ Admin Commands
-- `/start` - Start the bot
-- `/help` - Show help message
-- `/settings` - View group settings
-- `/ban <user> [reason]` - Ban a user
-- `/unban <user>` - Unban a user
-- `/mute <user> [duration] [reason]` - Mute a user (e.g., `/mute @user 10m spam`)
-- `/unmute <user>` - Unmute a user
-- `/warn <user> [reason]` - Warn a user
-- `/warnings <user>` - View user warnings
-- `/clearwarnings <user>` - Clear all warnings
-- `/kick <user>` - Kick a user
-- `/info <user>` - Get user information
-- `/welcome <message>` - Set welcome message
-- `/captcha` - Toggle CAPTCHA
-- `/antiflood <count> [window]` - Set anti-flood limit
-- `/linkprotect` - Toggle link protection
-- `/bannedwords add/remove/clear` - Manage banned words
-- `/ping` - Check bot status
+### ⚠️ Moderation Tools
+- `/ban` - Ban users permanently
+- `/mute` - Mute users temporarily (supports time like 10m, 2h, 3d)
+- `/warn` - Warn users (auto-ban after 3 warnings)
+- `/kick` - Kick users from group
+- `/purge` - Delete multiple messages
 
-## Installation
+### 📝 Filters & Notes
+- Create auto-responses to keywords
+- Save important information as notes
+- Manage via inline keyboards
+- Inline query support for quick note access
 
-### Prerequisites
-- Python 3.9+
-- pip package manager
-- A Telegram Bot Token from [@BotFather](https://t.me/BotFather)
+### 🎨 Theme System
+Choose from 8 beautiful color themes:
+- 🔵 **Default** - Classic blue theme
+- 🌊 **Ocean** - Sea-inspired colors
+- 🌲 **Forest** - Nature greens
+- 🌅 **Sunset** - Warm oranges
+- 💜 **Cyber** - Neon cyberpunk
+- ⭐ **Galaxy** - Space themed
+- 🔥 **Fire** - Hot reds
+- ❄️ **Ice** - Cool blues
 
-### Setup Steps
+### 🔧 Permissions Control
+- Granular control over member permissions
+- Lock/unlock chat with one command
+- Toggle individual permissions via inline panel
 
-1. **Clone or download this repository**
+## 🚀 Quick Start
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set environment variables:**
-   ```bash
-   export TELEGRAM_BOT_TOKEN='your_bot_token_here'
-   export ADMIN_IDS='123456789,987654321'  # Optional: comma-separated admin IDs
-   ```
-
-4. **Run the bot:**
-   ```bash
-   cd src
-   python bot.py
-   ```
-
-### Alternative: Using .env file
-Create a `.env` file in the root directory:
-```
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-ADMIN_IDS=123456789,987654321
-```
-
-Then run:
+### 1. Install Dependencies
 ```bash
-pip install python-dotenv
+pip install -r requirements.txt
+```
+
+### 2. Configure Bot
+Edit `src/configs/settings.py` or set environment variables:
+```bash
+export BOT_TOKEN="your_bot_token_from_botfather"
+export DATABASE_URL="sqlite+aiosqlite:///bot_database.db"
+export ADMINS="123456789,987654321"
+```
+
+### 3. Run the Bot
+```bash
 python src/bot.py
 ```
 
-## Project Structure
+## 📖 Commands
+
+| Command | Description |
+|---------|-------------|
+| `/settings` | Open interactive settings panel |
+| `/lock` | Lock chat |
+| `/unlock` | Unlock chat |
+| `/ban` | Ban a user |
+| `/mute` | Mute a user |
+| `/warn` | Warn a user |
+| `/kick` | Kick a user |
+| `/theme` | Change button theme |
+
+## 🏗️ Project Structure
 
 ```
-/workspace
-├── data/                    # SQLite database storage
-├── logs/                    # Bot logs
-├── src/
-│   ├── bot.py              # Main bot entry point
-│   ├── database.py         # Database configuration
-│   ├── db_operations.py    # Database CRUD operations
-│   ├── models.py           # SQLAlchemy models
-│   ├── handlers/
-│   │   ├── moderation.py   # Moderation commands
-│   │   ├── protection.py   # Protection features
-│   │   └── permissions.py  # Permission checks
-│   └── utils/
-│       ├── helpers.py      # Utility functions
-│       └── keyboards.py    # Inline keyboards
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
+src/
+├── bot.py              # Main entry point
+├── configs/settings.py # Configuration
+├── handlers/           # All command handlers
+├── models/database.py  # SQLAlchemy models
+└── utils/              # Helpers and keyboards
 ```
 
-## Database
+## 🎨 Custom Themes
 
-The bot uses SQLite for data storage. The database file is automatically created at `data/bot.db`.
+The bot features a unique emoji-based theming system with 8 themes:
+- default, ocean, forest, sunset, cyber, galaxy, fire, ice
 
-### Tables:
-- **groups** - Group settings and configurations
-- **users** - User information
-- **warnings** - Warning records
-- **mutes** - Active mutes
-- **bans** - Ban records
-- **captcha_sessions** - CAPTCHA verification sessions
-- **logs** - Action logs
+## 📄 License
 
-## Configuration
-
-### Group Settings (stored per group):
-- Welcome message (enabled/disabled, custom text)
-- CAPTCHA (enabled/disabled)
-- Anti-spam (enabled/disabled)
-- Anti-flood (message count, time window)
-- Banned words list
-- Link protection (enabled/disabled)
-
-## Making Bot Admin
-
-For full functionality, make the bot an administrator in your group with these permissions:
-- ✅ Delete messages
-- ✅ Ban users
-- ✅ Restrict members
-- ✅ Invite users (optional)
-
-## Support
-
-For issues or feature requests, please check the documentation or create an issue.
-
-## License
-
-MIT License - Feel free to use and modify!
+MIT License
 
 ---
 
-**Note:** Replace `YourBotName` and `YourSupportChat` in the keyboard files with your actual bot username and support chat.
+Made with ❤️ for Telegram communities
