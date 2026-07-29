@@ -1,7 +1,7 @@
 import os
 
 # Bot Configuration
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8699561436:AAFzxCPxZiKnlu2mGVh2EFfujrcif5WfIWk")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "1778070005"))
 
 # Database
