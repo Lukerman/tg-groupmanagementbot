@@ -1,0 +1,1 @@
+/usr/local/bin/python: Error while finding module specification for 'src.bot' (ModuleNotFoundError: No module named 'src')
