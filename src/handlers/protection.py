@@ -219,9 +219,9 @@ async def safe_delete_message(bot, chat_id, message_id):
 
 def setup_protection_handlers(application):
     """Setup protection handlers"""
-    # Message protection
+    # Message protection - exclude all status updates (service messages)
     application.add_handler(MessageHandler(
-        filters.ALL & ~filters.STATUS_UPDATE,
+        filters.ALL & ~filters.StatusUpdate.ALL,
         check_protection
     ), group=1)
     

@@ -1,0 +1,11 @@
+2026-07-29 22:16:13,178 - __main__ - INFO - Starting Advanced Group Management Bot...
+/workspace/src/bot.py:185: DeprecationWarning: There is no current event loop
+  asyncio.get_event_loop().run_until_complete(setup_db())
+2026-07-29 22:16:13,492 - __main__ - INFO - Database initialized!
+2026-07-29 22:16:13,494 - __main__ - INFO - Bot is running! Press Ctrl+C to stop.
+2026-07-29 22:16:14,506 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAFzxCPxZiKnlu2mGVh2EFfujrcif5WfIWk/getMe "HTTP/1.1 200 OK"
+2026-07-29 22:16:14,859 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAFzxCPxZiKnlu2mGVh2EFfujrcif5WfIWk/setMyCommands "HTTP/1.1 200 OK"
+2026-07-29 22:16:14,860 - __main__ - INFO - Bot commands set successfully!
+2026-07-29 22:16:15,024 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAFzxCPxZiKnlu2mGVh2EFfujrcif5WfIWk/deleteWebhook "HTTP/1.1 200 OK"
+2026-07-29 22:16:15,026 - apscheduler.scheduler - INFO - Scheduler started
+2026-07-29 22:16:15,026 - telegram.ext.Application - INFO - Application started
