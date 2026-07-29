@@ -1,1 +1,49 @@
-/usr/local/bin/python: Error while finding module specification for 'src.bot' (ModuleNotFoundError: No module named 'src')
+2026-07-29 22:50:42,007 - __main__ - INFO - Starting Advanced Group Management Bot...
+2026-07-29 22:50:42,226 - __main__ - INFO - Bot is running... Press Ctrl+C to stop.
+2026-07-29 22:50:42,731 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/getMe "HTTP/1.1 200 OK"
+2026-07-29 22:50:42,732 - __main__ - INFO - Bot initialized successfully!
+2026-07-29 22:50:42,732 - __main__ - INFO - Admin ID set to: 1778070005
+2026-07-29 22:50:42,900 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/deleteWebhook "HTTP/1.1 200 OK"
+2026-07-29 22:50:42,902 - telegram.ext.Application - INFO - Application started
+2026-07-29 22:50:43,416 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/getUpdates "HTTP/1.1 200 OK"
+2026-07-29 22:50:43,780 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/sendMessage "HTTP/1.1 200 OK"
+2026-07-29 22:50:44,127 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/sendMessage "HTTP/1.1 200 OK"
+2026-07-29 22:50:44,290 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/getChatAdministrators "HTTP/1.1 400 Bad Request"
+2026-07-29 22:50:44,290 - telegram.ext.Application - ERROR - No error handlers are registered, logging exception.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/telegram/ext/_application.py", line 1264, in process_update
+    await coroutine
+  File "/usr/local/lib/python3.12/site-packages/telegram/ext/_handlers/basehandler.py", line 157, in handle_update
+    return await self.callback(update, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/src/handlers/admin.py", line 146, in locks_command
+    admins = await chat.get_administrators()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/_chat.py", line 753, in get_administrators
+    return await self.get_bot().get_chat_administrators(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/ext/_extbot.py", line 1726, in get_chat_administrators
+    return await super().get_chat_administrators(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/_bot.py", line 541, in decorator
+    result = await func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/_bot.py", line 4466, in get_chat_administrators
+    result = await self._post(
+             ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/_bot.py", line 629, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/ext/_extbot.py", line 347, in _do_post
+    return await super()._do_post(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/_bot.py", line 657, in _do_post
+    return await request.post(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/request/_baserequest.py", line 200, in post
+    result = await self._request_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/telegram/request/_baserequest.py", line 379, in _request_wrapper
+    raise BadRequest(message)
+telegram.error.BadRequest: There are no administrators in the private chat
+2026-07-29 22:50:53,589 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8699561436:AAErd_s9z6usu7hk2-9wtzMZQvIh8-a5lvE/getUpdates "HTTP/1.1 200 OK"
